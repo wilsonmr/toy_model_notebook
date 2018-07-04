@@ -35,12 +35,11 @@ def generate_hoc(x, N_model, N_law, N_rep=1):
         hoc_rep[:, k] = hoc
     return hoc_rep
 
-def fit_law(x, noise, hoc_rep, N_model, N_law):
+def fit_law(x, noise, hoc_rep, N_model, N_law, N_rep):
     """Functions takes x points, noise and higher order coefficients, and fits
     the law with N_law coefficients using a model with N_model coefficients
     returns N_coeff*N_rep array of coefficients
     """
-    N_rep = noise.shape[1]
     N_c = min(N_law, N_model)
     c_rep = np.zeros((N_model, N_rep))
     c_rep[:N_c, :] = np.ones((N_c, N_rep))
@@ -65,3 +64,15 @@ def tv_split(N_x):
     """returns two sets of indices for making a training validation split"""
     return np.split(np.arange(N_x)[np.random.permutation(N_x)], 2)
     
+def sgd_step(N_batch, x, y_data, gamma, lr, sigma):
+    y_model = generate_y(x, gamma)
+    grad_chi2 = np.zeros(gamma.shape[0])
+    batch_i = np.split(np.arange(x.shape[0])[np.random.permutation(x.shape[0])],
+                       N_batch)
+    for b in range(N_batch):
+        for j in range(gamma.shape[0]):
+            grad_chi2[j] = np.sum(-2*(x[batch_i[b]]**(j))*(y_data[batch_i[b]] -
+                                                        y_model[batch_i[b]]
+            )/((sigma**2)))/batch_i[b].shape[0]
+        gamma -= lr*grad_chi2
+    return gamma
